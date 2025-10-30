@@ -1164,7 +1164,7 @@ def show_calculation_config_window(selected_products):
 
     # 商家选择
     st.write("**选择商家优惠:**")
-    store_options = ["明洞乐天", "新世界", "韩国电话注册", "乐天/新世界奥莱", "现代百货"]
+    store_options = ["明洞乐天", "新世界", "旗舰店", "乐天/新世界奥莱", "现代百货"]
     selected_store = st.radio("选择商家", store_options, key="store_selection")
 
     # 检测商家是否改变，如果改变则清除之前的优惠选择
@@ -1200,14 +1200,11 @@ def show_calculation_config_window(selected_products):
 
     with col1:
         if st.button("🚀 开始试算", key="calculate_final"):
-            if not selected_discounts:
-                st.warning("请至少选择一个优惠项目")
-            else:
-                # 计算最终结果
-                result = calculate_detailed_price(total_krw, selected_discounts)
-                st.session_state.calculation_result = result
-                st.session_state.show_calculation_config = False
-                st.rerun()
+            # 修改逻辑：即使没有选择优惠也允许试算，此时只计算退税
+            result = calculate_detailed_price(total_krw, selected_discounts)
+            st.session_state.calculation_result = result
+            st.session_state.show_calculation_config = False
+            st.rerun()
 
     with col2:
         if st.button("← 返回收藏列表", key="back_to_favorites"):
@@ -1363,8 +1360,11 @@ def display_calculation_results(selected_products, result):
                 st.warning("部分产品缺少国内售价信息")
     # 显示使用的优惠
     st.write("**使用的优惠:**")
-    for discount in result['selected_discounts']:
-        st.write(f"✅ {discount}")
+    if result['selected_discounts']:
+        for discount in result['selected_discounts']:
+            st.write(f"✅ {discount}")
+    else:
+        st.write("✓ 未选择优惠（仅计算退税）")
 
     # # 人民币换算
     # cny_price = convert_krw_to_cny(result['final_payment'])

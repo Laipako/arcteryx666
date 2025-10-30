@@ -191,7 +191,7 @@ def show_store_calculation_config(store_name: str, products: list):
     
     # 商家选择（单选）
     st.write("**选择商家优惠:**")
-    store_options = ["明洞乐天", "新世界", "韩国电话注册", "乐天/新世界奥莱", "现代百货"]
+    store_options = ["明洞乐天", "新世界", "旗舰店", "乐天/新世界奥莱", "现代百货"]
     selected_store = st.radio("商家选择", store_options, key=f"store_selection_{store_name}", label_visibility="collapsed")
     
     # 显示对应商家的优惠选项
@@ -214,14 +214,11 @@ def show_store_calculation_config(store_name: str, products: list):
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🚀 开始试算", key=f"calculate_plan_{store_name}"):
-            if not selected_discounts:
-                st.warning("请至少选择一个优惠项目")
-            else:
-                # 计算最终结果
-                result = calculate_detailed_price(total_krw, selected_discounts)
-                st.session_state.plan_calculation_result[store_name] = result
-                st.session_state.show_plan_calculation_config[store_name] = False
-                st.rerun()
+            # 修改逻辑：即使没有选择优惠也允许试算，此时只计算退税
+            result = calculate_detailed_price(total_krw, selected_discounts)
+            st.session_state.plan_calculation_result[store_name] = result
+            st.session_state.show_plan_calculation_config[store_name] = False
+            st.rerun()
     
     with col2:
         if st.button("← 返回购买计划", key=f"back_to_plan_{store_name}"):

@@ -10,6 +10,12 @@ DISCOUNT_CONFIG = {
                 "rule": "总价5%折扣（税前优惠）"
             },
             {
+                "name": "新会员5%折扣",
+                "type": "pre_tax_percent",
+                "rate": 0.05,
+                "rule": "需韩国电话注册新会员，总价5%折扣（税前优惠）"
+            },
+            {
                 "name": "银联满10万减7500",
                 "type": "pre_tax_fixed",
                 "threshold": 100000,
@@ -27,6 +33,12 @@ DISCOUNT_CONFIG = {
                 "type": "pre_tax_percent",
                 "rate": 0.05,
                 "rule": "需出示会员卡，总价5%折扣（税前优惠）"
+            },
+            {
+                "name": "新会员5%折扣",
+                "type": "pre_tax_percent",
+                "rate": 0.05,
+                "rule": "需韩国电话注册新会员，总价5%折扣（税前优惠）"
             },
             {
                 "name": "银联满10万减1万",
@@ -48,8 +60,8 @@ DISCOUNT_CONFIG = {
             }
         ]
     },
-    "韩国电话注册": {
-        "description": "韩国电话注册新会员优惠",
+    "旗舰店": {
+        "description": "旗舰店优惠",
         "options": [
             {
                 "name": "新会员5%折扣",
@@ -63,6 +75,12 @@ DISCOUNT_CONFIG = {
         "description": "奥特莱斯专属优惠",
         "options": [
             {
+                "name": "新会员5%折扣",
+                "type": "pre_tax_percent",
+                "rate": 0.05,
+                "rule": "需韩国电话注册新会员，总价5%折扣（税前优惠）"
+            },
+            {
                 "name": "银联满5万10%折扣",
                 "type": "pre_tax_capped",
                 "threshold": 50000,
@@ -75,6 +93,12 @@ DISCOUNT_CONFIG = {
     "现代百货": {
         "description": "现代百货专属优惠",
         "options": [
+            {
+                "name": "新会员5%折扣",
+                "type": "pre_tax_percent",
+                "rate": 0.05,
+                "rule": "需韩国电话注册新会员，总价5%折扣（税前优惠）"
+            },
             {
                 "name": "7%积分赠送",
                 "type": "post_tax_tiered_points",
