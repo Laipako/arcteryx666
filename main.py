@@ -906,6 +906,8 @@ def show_favorites_tab():
                 if inventory_matrix:
                     st.session_state.inventory_queried = True
                     st.session_state.inventory_matrix = inventory_matrix
+                    # 新增：保存库存数据以供购买计划标签页使用
+                    st.session_state.purchase_plan_inventory_matrix = inventory_matrix
                     progress_text.success(f"查询完成！共获取 {len(inventory_matrix)} 个店铺的库存数据")
                 else:
                     st.error("库存查询失败，请检查网络连接或稍后重试")

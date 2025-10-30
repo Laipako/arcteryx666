@@ -47,6 +47,44 @@ def show_purchase_plan_tab():
                 with col1:
                     # 产品信息
                     product_display = f"{product['exact_model'] or product['product_model']} {product['color']} {product['size']}"
+                    
+                    # 新增：显示库存信息
+                    # 库存矩阵使用 product_model 作为键（不是 exact_model）
+                    product_key_for_inventory = f"{product['product_model']} {product['color']} {product['size']}"
+                    
+                    # 获取当前店铺的库存矩阵
+                    inventory_matrix = st.session_state.get('purchase_plan_inventory_matrix', None)
+                    
+                    if inventory_matrix and store_name in inventory_matrix:
+                        # 查询该店铺下该产品的库存
+                        store_inventory = inventory_matrix[store_name]
+                        if product_key_for_inventory in store_inventory:
+                            stock_count = store_inventory[product_key_for_inventory]
+                            if stock_count and int(stock_count) > 0:
+                                product_display += f"({stock_count}件)"
+                            else:
+                                product_display += "(无库存)"
+                        else:
+                            # 库存未找到 - 显示无库存
+                            product_display += "(无库存)"
+                            # 添加调试信息（可选，仅在展开器中显示）
+                            with st.expander("ℹ️ 库存匹配调试信息", expanded=False):
+                                st.write(f"🔍 搜索的产品键：`{product_key_for_inventory}`")
+                                st.write(f"📍 店铺：{store_name}")
+                                st.write(f"📝 product_model: `{product.get('product_model')}`")
+                                st.write(f"📝 exact_model: `{product.get('exact_model')}`")
+                                if store_inventory:
+                                    st.write(f"📦 该店铺的可用产品键（前10个）：")
+                                    for i, key in enumerate(list(store_inventory.keys())[:10]):
+                                        st.write(f"  {i+1}. `{key}`")
+                                    if len(store_inventory) > 10:
+                                        st.write(f"  ... 还有 {len(store_inventory) - 10} 个产品")
+                                else:
+                                    st.write("❌ 该店铺无库存数据")
+                    else:
+                        # 未查询库存
+                        product_display += "(未查库存)"
+                    
                     st.write(product_display)
                 
                 with col2:
