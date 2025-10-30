@@ -1370,6 +1370,13 @@ def display_calculation_results(selected_products, result):
     # cny_price = convert_krw_to_cny(result['final_payment'])
     # st.write(f"**人民币价格:** {cny_price:,.0f}元")
 def main():
+    # 添加：Streamlit部署后强制清除缓存机制
+    # 这确保部署新版本时立即生效，避免缓存问题
+    if "last_app_version" not in st.session_state:
+        # 首次运行，清除所有Streamlit缓存
+        st.cache_data.clear()
+        st.session_state.last_app_version = "1.0"
+    
     # 获取汇率信息
     rate_info = get_exchange_rate()
 
