@@ -31,6 +31,8 @@ from purchase_plan_manager import add_to_plan, check_product_in_plan, load_plans
 from plan_display import show_purchase_plan_tab
 from cache_ui import show_cache_management_tab
 from calculation_utils import calculate_detailed_price, convert_krw_to_cny, calculate_tax_refund
+from followed_stores_ui import show_followed_stores_tab
+from followed_stores_manager import get_followed_store_names
 def format_string(s):
     """格式化字符串用于URL构造"""
     if not s:
@@ -991,10 +993,19 @@ def show_favorites_tab():
                 display_favorites = favorites
 
             # 先显示重点关注店铺分析
-            st.subheader("🏪🏪 重点关注店铺库存分析")
+            st.subheader("🏪🏪 关注店铺库存分析")
 
-            # 计算重点关注店铺分析
-            key_store_analysis = calculate_key_store_analysis(display_favorites, inventory_matrix)
+            # 获取用户关注的店铺列表
+            followed_stores = get_followed_store_names()
+            
+            # 如果用户没有关注任何店铺，提示用户
+            if not followed_stores:
+                st.info("💡 提示：在\"关注店铺\"标签页中添加关注店铺，以在此显示库存分析")
+                # 使用默认的重点关注店铺进行分析
+                key_store_analysis = calculate_key_store_analysis(display_favorites, inventory_matrix)
+            else:
+                # 使用用户关注的店铺进行分析
+                key_store_analysis = calculate_key_store_analysis(display_favorites, inventory_matrix, key_stores=followed_stores)
 
             # 显示每个重点关注店铺的库存情况
             for store_name, products in key_store_analysis.items():
@@ -1377,7 +1388,7 @@ def main():
         st.session_state.step_history = ["start"]
 
     # 创建标签页
-    tab1, tab2, tab3, tab4 = st.tabs(["🔍 产品查询", "⭐ 收藏产品", "🛒 购买计划", "🗑️ 缓存管理"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["🔍 产品查询", "⭐ 收藏产品", "🛒 购买计划", "⭐ 关注店铺", "🗑️ 缓存管理"])
 
     with tab1:
         show_product_query_tab()
@@ -1389,6 +1400,9 @@ def main():
         show_purchase_plan_tab()
     
     with tab4:
+        show_followed_stores_tab()
+    
+    with tab5:
         show_cache_management_tab()
 
 

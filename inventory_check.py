@@ -376,15 +376,22 @@ def calculate_product_depth_stats(favorites_list, inventory_matrix):
     return product_stats
 
 
-def calculate_key_store_analysis(favorites_list, inventory_matrix):
-    """计算重点关注店铺库存分析"""
-    # 重点关注店铺列表
-    key_stores = [
-        "始祖鸟新世界百货总店", "始祖鸟新世界百货江南店", "始祖鸟新世界百货Centum City店",
-        "始祖鸟乐天百货总店", "始祖鸟旗舰店江南", "始祖鸟釜山店",
-        "始祖鸟骊州Premium Village店", "始祖鸟The Hyundai首尔", "始祖鸟旗舰店大邱寿城",
-        "始祖鸟现代百货板桥店", "始祖鸟钟路店"
-    ]
+def calculate_key_store_analysis(favorites_list, inventory_matrix, key_stores=None):
+    """计算重点关注店铺库存分析
+    
+    Args:
+        favorites_list: 收藏产品列表
+        inventory_matrix: 库存矩阵
+        key_stores: 可选的店铺列表。如果为None，使用默认的重点关注店铺列表
+    """
+    # 如果没有提供店铺列表，使用默认的重点关注店铺列表
+    if key_stores is None:
+        key_stores = [
+            "始祖鸟新世界百货总店", "始祖鸟新世界百货江南店", "始祖鸟新世界百货Centum City店",
+            "始祖鸟乐天百货总店", "始祖鸟旗舰店江南", "始祖鸟釜山店",
+            "始祖鸟骊州Premium Village店", "始祖鸟The Hyundai首尔", "始祖鸟旗舰店大邱寿城",
+            "始祖鸟现代百货板桥店", "始祖鸟钟路店"
+        ]
 
     result = {}
 
