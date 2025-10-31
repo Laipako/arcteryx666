@@ -808,50 +808,53 @@ def show_favorites_tab():
         # 第二行：加入购买计划按钮
         col_plan1, col_plan2, col_plan3 = st.columns([1, 3, 3])
         with col_plan3:
-            # 检查产品是否已在购买计划中
-            is_in_plan, existing_store = check_product_in_plan(
+            # 检查产品在哪些店铺的购买计划中
+            is_in_plan, stores_with_product = check_product_in_plan(
                 favorite['product_model'], 
                 favorite['color'], 
                 favorite['size']
             )
             
-            if is_in_plan:
-                st.info(f"✓ 已在 {existing_store} 的购买计划中")
-            else:
-                if st.button("加入购买计划", key=f"add_plan_{i}"):
-                    st.session_state[f"show_store_selection_{i}"] = True
+            if is_in_plan and stores_with_product:
+                # 显示已添加的店铺列表
+                stores_display = "、".join(stores_with_product) if isinstance(stores_with_product, list) else stores_with_product
+                st.info(f"✓ 已在 {stores_display} 的购买计划中")
+            
+            # 无论是否已添加，都显示"加入购买计划"按钮，允许在其他店铺添加
+            if st.button("加入购买计划", key=f"add_plan_{i}"):
+                st.session_state[f"show_store_selection_{i}"] = True
+            
+            # 显示店铺选择下拉框
+            if st.session_state.get(f"show_store_selection_{i}", False):
+                store_list = sorted(STORE_REGION_MAPPING.keys())
+                selected_store = st.selectbox(
+                    f"选择店铺",
+                    store_list,
+                    key=f"store_select_{i}"
+                )
                 
-                # 显示店铺选择下拉框
-                if st.session_state.get(f"show_store_selection_{i}", False):
-                    store_list = sorted(STORE_REGION_MAPPING.keys())
-                    selected_store = st.selectbox(
-                        f"选择店铺",
-                        store_list,
-                        key=f"store_select_{i}"
-                    )
-                    
-                    col_confirm, col_cancel = st.columns(2)
-                    with col_confirm:
-                        if st.button("确认", key=f"confirm_add_plan_{i}"):
-                            # 准备产品信息
-                            product_info = {
-                                "product_model": favorite['product_model'],
-                                "exact_model": favorite.get('exact_model', ''),
-                                "color": favorite['color'],
-                                "size": favorite['size'],
-                                "price_krw": int(favorite['price']),
-                                "year_info": favorite.get('year_info', ''),
-                                "domestic_price_cny": favorite.get('china_price_cny', None)
-                            }
-                            
-                            if add_to_plan(selected_store, product_info):
-                                st.session_state[f"show_store_selection_{i}"] = False
-                                st.rerun()
-                    
-                    with col_cancel:
-                        if st.button("取消", key=f"cancel_add_plan_{i}"):
+                col_confirm, col_cancel = st.columns(2)
+                with col_confirm:
+                    if st.button("确认", key=f"confirm_add_plan_{i}"):
+                        # 准备产品信息
+                        product_info = {
+                            "product_model": favorite['product_model'],
+                            "exact_model": favorite.get('exact_model', ''),
+                            "color": favorite['color'],
+                            "size": favorite['size'],
+                            "price_krw": int(favorite['price']),
+                            "year_info": favorite.get('year_info', ''),
+                            "domestic_price_cny": favorite.get('china_price_cny', None)
+                        }
+                        
+                        if add_to_plan(selected_store, product_info):
                             st.session_state[f"show_store_selection_{i}"] = False
                             st.rerun()
+                
+                with col_cancel:
+                    if st.button("取消", key=f"cancel_add_plan_{i}"):
+                        st.session_state[f"show_store_selection_{i}"] = False
+                        st.rerun()
 
         st.divider()
 

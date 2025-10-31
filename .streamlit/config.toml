@@ -9,3 +9,4 @@ level = "info"
 [cache]
 # 关键：设置较短的缓存过期时间，确保部署后快速生效
 maxEntries = 10
+

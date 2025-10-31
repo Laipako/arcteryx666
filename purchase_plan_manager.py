@@ -129,19 +129,42 @@ def calculate_store_domestic_total(products: list) -> tuple:
     return (total_domestic_price if has_all_prices else 0, has_all_prices)
 
 
-def check_product_in_plan(product_model: str, color: str, size: str) -> tuple:
+def check_product_in_plan(product_model: str, color: str, size: str, store_name: str = None) -> tuple:
     """
     检查产品是否已在购买计划中
-    返回: (是否存在, 店铺名称 或 None)
+    如果提供了store_name，则检查该产品是否在特定店铺的计划中
+    如果未提供store_name，则返回产品所在的所有店铺列表
+    
+    返回: 
+      - 如果store_name已提供: (是否在该店铺存在, 店铺名称 或 None)
+      - 如果store_name未提供: (是否存在于任何店铺, 存在的店铺列表 或 None)
     """
     try:
         plans = load_plans()
-        for plan in plans:
-            if (plan["product_model"] == product_model and 
-                plan["color"] == color and 
-                plan["size"] == size):
-                return (True, plan["store_name"])
-        return (False, None)
+        
+        if store_name:
+            # 检查产品是否在特定店铺存在
+            for plan in plans:
+                if (plan["product_model"] == product_model and 
+                    plan["color"] == color and 
+                    plan["size"] == size and
+                    plan["store_name"] == store_name):
+                    return (True, store_name)
+            return (False, None)
+        else:
+            # 返回产品所在的所有店铺
+            stores = []
+            for plan in plans:
+                if (plan["product_model"] == product_model and 
+                    plan["color"] == color and 
+                    plan["size"] == size):
+                    if plan["store_name"] not in stores:
+                        stores.append(plan["store_name"])
+            
+            if stores:
+                return (True, stores)
+            else:
+                return (False, None)
     except Exception as e:
         st.error(f"检查购买计划失败: {e}")
         return (False, None)
