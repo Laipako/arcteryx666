@@ -36,64 +36,13 @@ def show_purchase_plan_tab():
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("查购买计划库存", key="check_plan_inventory"):
-            try:
-                from inventory_check import safe_batch_query
-                from favorites_manager import load_favorites
-                
-                # 收集购买计划中的所有产品
-                all_plan_products = []
-                for products in plans_by_store.values():
-                    all_plan_products.extend(products)
-                
-                if all_plan_products:
-                    st.info(f"开始查询购买计划中的 {len(all_plan_products)} 个产品的库存...")
-                    
-                    # 从收藏中加载SKU信息
-                    favorites = load_favorites()
-                    
-                    # 为购买计划产品补充SKU信息
-                    plan_products_with_sku = []
-                    for plan_product in all_plan_products:
-                        # 从收藏中查找匹配的产品
-                        for fav in favorites:
-                            if (fav.get("product_model") == plan_product.get("product_model") and
-                                fav.get("color") == plan_product.get("color") and
-                                fav.get("size") == plan_product.get("size")):
-                                # 找到匹配的收藏产品，使用其SKU
-                                plan_product_copy = plan_product.copy()
-                                plan_product_copy["sku"] = fav.get("sku")
-                                plan_products_with_sku.append(plan_product_copy)
-                                break
-                    
-                    if plan_products_with_sku:
-                        # 调用库存查询函数
-                        inventory_matrix = safe_batch_query(plan_products_with_sku)
-                        
-                        if inventory_matrix:
-                            st.session_state.purchase_plan_inventory_matrix = inventory_matrix
-                            st.success(f"✓ 查询完成！共获取 {len(inventory_matrix)} 个店铺的库存数据")
-                            time.sleep(2)
-                            st.rerun()
-                        else:
-                            st.error("库存查询失败，请检查网络连接或稍后重试")
-                    else:
-                        st.error(f"⚠️ 购买计划中有 {len(all_plan_products)} 个产品，但在收藏中找不到对应的SKU。请确保这些产品已添加到收藏中")
-                else:
-                    st.warning("购买计划中无产品")
-            except Exception as e:
-                st.error(f"库存查询异常: {e}")
+        if st.button("查全部库存", key="check_plan_inventory"):
+            # 直接映射到收藏产品标签页的"查全部库存"功能
+            st.session_state.switch_to_favorites_and_query = True
+            st.rerun()
     
     with col2:
-        if st.button("导入收藏库存数据", key="import_favorites_inventory"):
-            # 从session_state中获取收藏库存数据
-            if st.session_state.get('inventory_matrix'):
-                st.session_state.purchase_plan_inventory_matrix = st.session_state.inventory_matrix
-                st.success("✓ 已导入收藏产品的库存数据")
-                time.sleep(1)
-                st.rerun()
-            else:
-                st.warning("⚠️ 收藏产品库存数据不可用，请先在【⭐ 收藏产品】标签页查询库存")
+        pass
     
     st.divider()
     

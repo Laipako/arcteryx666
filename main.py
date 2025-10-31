@@ -930,6 +930,32 @@ def show_favorites_tab():
             st.session_state.sort_option = "默认"
             st.rerun()
 
+    # 检查是否需要自动触发全部库存查询（从购买计划标签页触发）
+    if st.session_state.get("trigger_batch_query_all", False):
+        st.session_state.trigger_batch_query_all = False
+        if not favorites:
+            st.warning("收藏列表为空")
+        else:
+            # 显示查询进度
+            progress_text = st.empty()
+            progress_text.info(f"开始查询所有 {len(favorites)} 个产品的库存...")
+
+            # 实际执行查询（查询所有收藏产品）
+            inventory_matrix = safe_batch_query(favorites)
+
+            if inventory_matrix:
+                st.session_state.inventory_queried = True
+                st.session_state.inventory_matrix = inventory_matrix
+                # 新增：保存库存数据以供购买计划标签页使用
+                st.session_state.purchase_plan_inventory_matrix = inventory_matrix
+                progress_text.success(f"查询完成！共获取 {len(inventory_matrix)} 个店铺的库存数据")
+            else:
+                st.error("库存查询失败，请检查网络连接或稍后重试")
+
+            # 清除进度显示
+            time.sleep(2)
+            progress_text.empty()
+
 
     # 新增：显示试算配置窗口
     if st.session_state.show_calculation_config:
@@ -1404,6 +1430,11 @@ def main():
         show_product_query_tab()
 
     with tab2:
+        # 检查是否需要从购买计划标签页切换过来并查询全部库存
+        if st.session_state.get("switch_to_favorites_and_query", False):
+            st.session_state.switch_to_favorites_and_query = False
+            st.session_state.trigger_batch_query_all = True
+        
         show_favorites_tab()
     
     with tab3:
