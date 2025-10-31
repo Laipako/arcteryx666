@@ -1435,15 +1435,12 @@ def display_calculation_results(selected_products, result):
     # cny_price = convert_krw_to_cny(result['final_payment'])
     # st.write(f"**人民币价格:** {cny_price:,.0f}元")
 def main():
-    # 添加：Streamlit部署后强制清除缓存机制
-    # 这确保部署新版本时立即生效，避免缓存问题
-    if "last_app_version" not in st.session_state:
-        # 首次运行，清除所有Streamlit缓存
-        st.cache_data.clear()
-        st.session_state.last_app_version = "1.0"
+    # 获取汇率信息 - 使用缓存避免重复调用
+    @st.cache_data(ttl=300)
+    def get_rate_cached():
+        return get_exchange_rate()
     
-    # 获取汇率信息
-    rate_info = get_exchange_rate()
+    rate_info = get_rate_cached()
 
     # 主标题和汇率信息在同一行
     st.title("🏔️ 始祖鸟查货系统")
