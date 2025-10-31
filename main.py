@@ -1052,6 +1052,42 @@ def show_favorites_tab():
                             # 显示所有产品的库存状态
                             for product in products:
                                 st.write(f"• {product['display_text']}")
+                                
+                                # 只有有库存的产品才能加入购买计划
+                                if product['stock_count'] > 0:
+                                    # 从product_key中解析product_model、color、size
+                                    product_key_parts = product['product_key'].rsplit(' ', 2)
+                                    if len(product_key_parts) == 3:
+                                        product_model, color, size = product_key_parts
+                                        
+                                        # 从display_favorites中查找对应的favorite对象
+                                        favorite = None
+                                        for fav in display_favorites:
+                                            if (fav['product_model'] == product_model and 
+                                                fav['color'] == color and 
+                                                fav['size'] == size):
+                                                favorite = fav
+                                                break
+                                        
+                                        if favorite:
+                                            if st.button("加入购买计划", key=f"add_plan_inv_{store_name}_{product_model}_{color}_{size}"):
+                                                # 准备产品信息
+                                                product_info = {
+                                                    "product_model": favorite['product_model'],
+                                                    "exact_model": favorite.get('exact_model', ''),
+                                                    "color": favorite['color'],
+                                                    "size": favorite['size'],
+                                                    "price_krw": int(favorite['price']),
+                                                    "year_info": favorite.get('year_info', ''),
+                                                    "domestic_price_cny": favorite.get('china_price_cny', None)
+                                                }
+                                                
+                                                if add_to_plan(store_name, product_info):
+                                                    st.success(f"✅ 已添加到 {store_name} 的购买计划")
+                                                    st.rerun()
+                                                else:
+                                                    st.error(f"❌ 添加到 {store_name} 的购买计划失败")
+
                 else:
                     # 如果店铺没有相关产品数据
                     col1, col2 = st.columns([1, 3])
