@@ -105,9 +105,11 @@ DISCOUNT_CONFIG = {
                 "tiers": [
                     {"threshold": 500000, "amount": 35000},
                     {"threshold": 700000, "amount": 49000},
-                    {"threshold": 1000000, "amount": 70000}
+                    {"threshold": 1000000, "amount": 70000},
+                    {"threshold": 3000000, "amount": 210000},
+                    {"threshold": 5000000, "amount": 350000}
                 ],
-                "rule": "税前优惠后总价满50/70/100万赠3.5/4.9/7万积分"
+                "rule": "税前优惠后总价满50/70/100/300/500万赠3.5/4.9/7/21/35万积分"
             }
         ]
     }
