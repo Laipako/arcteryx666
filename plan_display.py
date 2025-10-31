@@ -245,15 +245,35 @@ def show_store_calculation_config(store_name: str, products: list):
     
     st.subheader(f"💰 {store_name} 试算配置")
     
-    # 显示选中的产品清单
-    st.write("**产品清单:**")
+    # 初始化产品选择状态（默认全选）
+    selection_key = f"product_selection_{store_name}"
+    if selection_key not in st.session_state:
+        st.session_state[selection_key] = {product['id']: True for product in products}
+    
+    # 显示产品清单和选择复选框
+    st.write("**选择要试算的产品:**")
     for i, product in enumerate(products, 1):
-        st.write(f"{i}. {product['exact_model'] or product['product_model']} - {product['color']} - {product['size']} - {product['price_krw']:,}韩元")
+        col1, col2 = st.columns([0.5, 3.5])
+        with col1:
+            selected = st.checkbox(
+                "选择",
+                value=st.session_state[selection_key].get(product['id'], True),
+                key=f"product_select_{store_name}_{product['id']}",
+                label_visibility="collapsed"
+            )
+            st.session_state[selection_key][product['id']] = selected
+        with col2:
+            st.write(f"{i}. {product['exact_model'] or product['product_model']} - {product['color']} - {product['size']} - {product['price_krw']:,}韩元")
     
-    # 计算原始总价
-    total_krw = sum(product['price_krw'] for product in products)
-    st.write(f"**税前总价:** {total_krw:,}韩元")
+    # 获取选中的产品
+    selected_products = [p for p in products if st.session_state[selection_key].get(p['id'], True)]
     
+    # 计算选中产品的总价
+    total_krw = sum(product['price_krw'] for product in selected_products)
+    
+    st.divider()
+    st.write(f"**已选产品数:** {len(selected_products)}/{len(products)}")
+    st.write(f"**选中产品税前总价:** {total_krw:,}韩元")
     st.divider()
     
     # 商家选择（单选）
@@ -281,11 +301,15 @@ def show_store_calculation_config(store_name: str, products: list):
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🚀 开始试算", key=f"calculate_plan_{store_name}"):
-            # 修改逻辑：即使没有选择优惠也允许试算，此时只计算退税
-            result = calculate_detailed_price(total_krw, selected_discounts)
-            st.session_state.plan_calculation_result[store_name] = result
-            st.session_state.show_plan_calculation_config[store_name] = False
-            st.rerun()
+            # 检查是否有选中的产品
+            if len(selected_products) == 0:
+                st.error("❌ 请至少选择一个产品进行试算")
+            else:
+                # 修改逻辑：即使没有选择优惠也允许试算，此时只计算退税
+                result = calculate_detailed_price(total_krw, selected_discounts)
+                st.session_state.plan_calculation_result[store_name] = result
+                st.session_state.show_plan_calculation_config[store_name] = False
+                st.rerun()
     
     with col2:
         if st.button("← 返回购买计划", key=f"back_to_plan_{store_name}"):
@@ -301,9 +325,13 @@ def display_store_calculation_results(store_name: str, products: list, result):
     
     st.subheader("📊 试算结果")
     
+    # 获取选中的产品
+    selection_key = f"product_selection_{store_name}"
+    selected_products = [p for p in products if st.session_state.get(selection_key, {}).get(p['id'], True)]
+    
     # 显示产品清单
-    st.write("**产品清单:**")
-    for i, product in enumerate(products, 1):
+    st.write("**试算产品清单:**")
+    for i, product in enumerate(selected_products, 1):
         st.write(f"{i}. {product['exact_model'] or product['product_model']} - {product['color']} - {product['size']}")
     
     st.divider()
@@ -312,7 +340,7 @@ def display_store_calculation_results(store_name: str, products: list, result):
     cny_price = convert_krw_to_cny(result['final_payment'])
     
     # 计算国内总价和折扣率
-    total_domestic_price, has_all_domestic_prices = calculate_store_domestic_total(products)
+    total_domestic_price, has_all_domestic_prices = calculate_store_domestic_total(selected_products)
     discount_rate = None
     if has_all_domestic_prices and total_domestic_price > 0:
         discount_rate = int((cny_price / total_domestic_price) * 100)
