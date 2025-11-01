@@ -1266,10 +1266,15 @@ def show_calculation_config_window(selected_products):
     with col1:
         if st.button("🚀 开始试算", key="calculate_final"):
             # 修改逻辑：即使没有选择优惠也允许试算，此时只计算退税
-            result = calculate_detailed_price(total_krw, selected_discounts)
-            st.session_state.calculation_result = result
-            st.session_state.show_calculation_config = False
-            st.rerun()
+            try:
+                result = calculate_detailed_price(total_krw, selected_discounts)
+                st.session_state.calculation_result = result
+                st.session_state.show_calculation_config = False
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ 试算出错: {str(e)}")
+                import traceback
+                st.write(traceback.format_exc())
 
     with col2:
         if st.button("← 返回收藏列表", key="back_to_favorites"):

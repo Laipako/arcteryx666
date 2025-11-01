@@ -255,10 +255,15 @@ def show_store_calculation_config(store_name: str, products: list):
                 st.error("❌ 请至少选择一个产品进行试算")
             else:
                 # 修改逻辑：即使没有选择优惠也允许试算，此时只计算退税
-                result = calculate_detailed_price(total_krw, selected_discounts)
-                st.session_state.plan_calculation_result[store_name] = result
-                st.session_state.show_plan_calculation_config[store_name] = False
-                st.rerun()
+                try:
+                    result = calculate_detailed_price(total_krw, selected_discounts)
+                    st.session_state.plan_calculation_result[store_name] = result
+                    st.session_state.show_plan_calculation_config[store_name] = False
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ 试算出错: {str(e)}")
+                    import traceback
+                    st.write(traceback.format_exc())
     
     with col2:
         if st.button("← 返回购买计划", key=f"back_to_plan_{store_name}"):

@@ -140,6 +140,11 @@ def calculate_detailed_price(total_krw, selected_discounts):
             if total_krw >= discount['threshold']:
                 discount_amount = total_krw * discount['rate']
                 pre_tax_discount += min(discount_amount, discount['cap'])
+        elif discount['type'] == 'pre_tax_tiered':
+            for tier in reversed(discount['tiers']):  # 从高到低检查
+                if total_krw >= tier['threshold']:
+                    pre_tax_discount += tier['amount']
+                    break
 
     # 第2步：计算税前优惠后价格
     after_pre_tax = total_krw - pre_tax_discount
