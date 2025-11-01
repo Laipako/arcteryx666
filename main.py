@@ -704,6 +704,37 @@ def show_favorites_tab():
     if "calculation_result" not in st.session_state:
         st.session_state.calculation_result = None
 
+    # 处理从购买计划标签页切换过来的查询全部库存请求
+    if st.session_state.get("trigger_batch_query_all", False):
+        st.session_state.trigger_batch_query_all = False
+        if favorites:
+            # 显示查询进度
+            progress_text = st.empty()
+            progress_text.info(f"开始查询所有 {len(favorites)} 个产品的库存...")
+
+            # 使用安全的并发查询
+            from inventory_check import safe_batch_query
+            inventory_matrix, query_stats = safe_batch_query(favorites)
+
+            if inventory_matrix:
+                st.session_state.inventory_queried = True
+                st.session_state.inventory_matrix = inventory_matrix
+                # 同时存储到purchase_plan_inventory_matrix供购买计划使用
+                st.session_state.purchase_plan_inventory_matrix = inventory_matrix
+                # 显示成功/失败统计
+                success_count = query_stats.get("success", 0)
+                failed_count = query_stats.get("failed", 0)
+                success_rate = query_stats.get("success_rate", 0)
+                duration = query_stats.get("duration", 0)
+                
+                progress_text.success(
+                    f"查询完成！成功: {success_count}个 ✅ | 失败: {failed_count}个 ❌ | "
+                    f"成功率: {success_rate}% | 耗时: {duration}秒 | 共 {len(inventory_matrix)} 个店铺"
+                )
+            else:
+                progress_text.error("库存查询失败，请检查网络连接或稍后重试")
+            st.rerun()
+
     st.header("⭐ 收藏产品")
 
     favorites = load_favorites()
