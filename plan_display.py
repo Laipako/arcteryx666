@@ -24,6 +24,10 @@ def show_purchase_plan_tab():
     if "plan_calculation_result" not in st.session_state:
         st.session_state.plan_calculation_result = {}
     
+    # 初始化购买计划管理模式状态
+    if "plan_management_mode" not in st.session_state:
+        st.session_state.plan_management_mode = False
+    
     # 获取购买计划数据
     plans_by_store = get_plans_grouped_by_store()
     
@@ -32,7 +36,7 @@ def show_purchase_plan_tab():
         return
     
     # 库存查询按钮区域
-    st.subheader("📦 库存查询")
+    st.write("**📦 库存查询**")
     col1, col2 = st.columns(2)
     
     with col1:
@@ -42,9 +46,16 @@ def show_purchase_plan_tab():
             st.rerun()
     
     with col2:
-        pass
+        if st.session_state.plan_management_mode:
+            if st.button("✅ 完成管理", use_container_width=True, key="finish_plan_manage"):
+                st.session_state.plan_management_mode = False
+                st.rerun()
+        else:
+            if st.button("⚙️ 管理", use_container_width=True, key="start_plan_manage"):
+                st.session_state.plan_management_mode = True
+                st.rerun()
     
-    st.divider()
+    st.write("")  # 紧凑间距
     
     # 遍历每个店铺
     for store_name in plans_by_store.keys():
@@ -52,83 +63,81 @@ def show_purchase_plan_tab():
         total_price = calculate_store_total_price(products)
         
         # 店铺标题区域
-        st.subheader(f"🏪 {store_name}")
+        st.write(f"**🏪 {store_name}**")
         
         # 创建容器用于产品列表
         with st.container(border=True):
             # 显示每个产品
             for idx, product in enumerate(products):
-                col1, col2, col3, col4 = st.columns([3, 1, 0.8, 0.8])
+                # 产品信息
+                product_display = f"{product['exact_model'] or product['product_model']} {product['color']} {product['size']}"
                 
-                with col1:
-                    # 产品信息
-                    product_display = f"{product['exact_model'] or product['product_model']} {product['color']} {product['size']}"
-                    
-                    # 新增：显示库存信息
-                    # 库存矩阵使用 product_model 作为键（不是 exact_model）
-                    product_key_for_inventory = f"{product['product_model']} {product['color']} {product['size']}"
-                    
-                    # 获取当前店铺的库存矩阵
-                    inventory_matrix = st.session_state.get('purchase_plan_inventory_matrix', None)
-                    
-                    if inventory_matrix and store_name in inventory_matrix:
-                        # 查询该店铺下该产品的库存
-                        store_inventory = inventory_matrix[store_name]
-                        if product_key_for_inventory in store_inventory:
-                            stock_count = store_inventory[product_key_for_inventory]
-                            if stock_count and int(stock_count) > 0:
-                                product_display += f"({stock_count}件)"
-                            else:
-                                product_display += "(无库存)"
+                # 新增：显示库存信息
+                # 库存矩阵使用 product_model 作为键（不是 exact_model）
+                product_key_for_inventory = f"{product['product_model']} {product['color']} {product['size']}"
+                
+                # 获取当前店铺的库存矩阵
+                inventory_matrix = st.session_state.get('purchase_plan_inventory_matrix', None)
+                
+                if inventory_matrix and store_name in inventory_matrix:
+                    # 查询该店铺下该产品的库存
+                    store_inventory = inventory_matrix[store_name]
+                    if product_key_for_inventory in store_inventory:
+                        stock_count = store_inventory[product_key_for_inventory]
+                        if stock_count and int(stock_count) > 0:
+                            product_display += f"({stock_count}件)"
                         else:
-                            # 库存未找到 - 显示无库存
                             product_display += "(无库存)"
-                            # 添加调试信息（可选，仅在展开器中显示）
-                            with st.expander("ℹ️ 库存匹配调试信息", expanded=False):
-                                st.write(f"🔍 搜索的产品键：`{product_key_for_inventory}`")
-                                st.write(f"📍 店铺：{store_name}")
-                                st.write(f"📝 product_model: `{product.get('product_model')}`")
-                                st.write(f"📝 exact_model: `{product.get('exact_model')}`")
-                                if store_inventory:
-                                    st.write(f"📦 该店铺的可用产品键（前10个）：")
-                                    for i, key in enumerate(list(store_inventory.keys())[:10]):
-                                        st.write(f"  {i+1}. `{key}`")
-                                    if len(store_inventory) > 10:
-                                        st.write(f"  ... 还有 {len(store_inventory) - 10} 个产品")
-                                else:
-                                    st.write("❌ 该店铺无库存数据")
                     else:
-                        # 未查询库存
-                        product_display += "(未查库存)"
-                    
-                    st.write(product_display)
+                        # 库存未找到 - 显示无库存
+                        product_display += "(无库存)"
+                        # 添加调试信息（可选，仅在展开器中显示）
+                        with st.expander("ℹ️ 库存匹配调试信息", expanded=False):
+                            st.write(f"🔍 搜索的产品键：`{product_key_for_inventory}`")
+                            st.write(f"📍 店铺：{store_name}")
+                            st.write(f"📝 product_model: `{product.get('product_model')}`")
+                            st.write(f"📝 exact_model: `{product.get('exact_model')}`")
+                            if store_inventory:
+                                st.write(f"📦 该店铺的可用产品键（前10个）：")
+                                for i, key in enumerate(list(store_inventory.keys())[:10]):
+                                    st.write(f"  {i+1}. `{key}`")
+                                if len(store_inventory) > 10:
+                                    st.write(f"  ... 还有 {len(store_inventory) - 10} 个产品")
+                            else:
+                                st.write("❌ 该店铺无库存数据")
+                else:
+                    # 未查询库存
+                    product_display += "(未查库存)"
                 
-                with col2:
-                    # 价格
-                    price_display = f"{product['price_krw']:,}韩元"
-                    st.write(price_display)
+                # 价格
+                price_display = f"{product['price_krw']:,}韩元"
                 
-                with col3:
-                    # 删除按钮
-                    if st.button("🗑️", key=f"delete_product_{product['id']}", help="删除该产品"):
-                        if remove_product_from_plan(product['id']):
-                            st.success("已删除")
-                            st.rerun()
-                
-                with col4:
-                    st.empty()  # 占位符保持对齐
-            
-            # 分割线
-            st.divider()
-            
+                # 创建删除按钮（只在管理模式显示）
+                delete_button_html = ""
+                if st.session_state.plan_management_mode:
+                    # 使用容器放置删除按钮
+                    col1, col2, col3 = st.columns([3, 1.8, 0.8])
+                    with col1:
+                        st.markdown(f"<p style='margin: 0px; padding: 0px; font-size: 14px;'>{product_display}</p>", unsafe_allow_html=True)
+                    with col2:
+                        st.markdown(f"<p style='margin: 0px; padding: 0px; font-size: 14px;'>{price_display}</p>", unsafe_allow_html=True)
+                    with col3:
+                        if st.button("🗑️", key=f"delete_product_{product['id']}", help="删除该产品"):
+                            if remove_product_from_plan(product['id']):
+                                st.success("已删除")
+                                st.rerun()
+                else:
+                    col1, col2 = st.columns([3, 1.8])
+                    with col1:
+                        st.markdown(f"<p style='margin: 0px; padding: 0px; font-size: 14px;'>{product_display}</p>", unsafe_allow_html=True)
+                    with col2:
+                        st.markdown(f"<p style='margin: 0px; padding: 0px; font-size: 14px;'>{price_display}</p>", unsafe_allow_html=True)
             # 税前总价
-            col1, col2, col3 = st.columns([3, 1, 0.8])
+            col1, col2 = st.columns([3, 1.8])
             with col1:
-                st.write("**税前总价**")
+                st.markdown(f"<p style='margin: 0px; padding: 0px; font-size: 14px; font-weight: bold;'>税前总价</p>", unsafe_allow_html=True)
             with col2:
-                st.write(f"**{total_price:,}韩元**")
-            with col3:
-                st.empty()
+                st.markdown(f"<p style='margin: 0px; padding: 0px; font-size: 14px; font-weight: bold;'>{total_price:,}韩元</p>", unsafe_allow_html=True)
         
         # 删除店铺和试算按钮区域
         col1, col2, col3, col4 = st.columns([3, 1, 1, 0.8])
@@ -141,17 +150,18 @@ def show_purchase_plan_tab():
                 st.rerun()
         
         with col3:
-            # 删除店铺按钮
-            if st.button("删除店铺", key=f"delete_store_{store_name}"):
-                # 显示确认对话框
-                if st.session_state.get(f"confirm_delete_{store_name}", False):
-                    if remove_store_from_plan(store_name):
-                        st.success(f"已删除 {store_name} 及其所有产品")
-                        st.session_state[f"confirm_delete_{store_name}"] = False
+            # 删除店铺按钮（只在管理模式显示）
+            if st.session_state.plan_management_mode:
+                if st.button("删除店铺", key=f"delete_store_{store_name}"):
+                    # 显示确认对话框
+                    if st.session_state.get(f"confirm_delete_{store_name}", False):
+                        if remove_store_from_plan(store_name):
+                            st.success(f"已删除 {store_name} 及其所有产品")
+                            st.session_state[f"confirm_delete_{store_name}"] = False
+                            st.rerun()
+                    else:
+                        st.session_state[f"confirm_delete_{store_name}"] = True
                         st.rerun()
-                else:
-                    st.session_state[f"confirm_delete_{store_name}"] = True
-                    st.rerun()
         
         # 显示删除确认
         if st.session_state.get(f"confirm_delete_{store_name}", False):
@@ -184,15 +194,13 @@ def show_purchase_plan_tab():
                         st.rerun()
                 
                 display_store_calculation_results(store_name, products, st.session_state.plan_calculation_result[store_name])
-        
-        st.write("")  # 间距
 
 
 def show_store_calculation_config(store_name: str, products: list):
     """显示店铺购买计划的试算配置窗口"""
     from discount_config import DISCOUNT_CONFIG
     
-    st.subheader(f"💰 {store_name} 试算配置")
+    st.write(f"**💰 {store_name} 试算配置**")
     
     # 初始化产品选择状态（默认全选）
     selection_key = f"product_selection_{store_name}"
@@ -220,10 +228,7 @@ def show_store_calculation_config(store_name: str, products: list):
     # 计算选中产品的总价
     total_krw = sum(product['price_krw'] for product in selected_products)
     
-    st.divider()
-    st.write(f"**已选产品数:** {len(selected_products)}/{len(products)}")
-    st.write(f"**选中产品税前总价:** {total_krw:,}韩元")
-    st.divider()
+    st.write(f"**已选产品数:** {len(selected_products)}/{len(products)} | **选中产品税前总价:** {total_krw:,}韩元")
     
     # 商家选择（单选）
     st.write("**选择商家优惠:**")
@@ -277,7 +282,7 @@ def display_store_calculation_results(store_name: str, products: list, result):
         st.error("试算失败，请重试")
         return
     
-    st.subheader("📊 试算结果")
+    st.write("**📊 试算结果**")
     
     # 获取选中的产品
     selection_key = f"product_selection_{store_name}"
@@ -288,7 +293,7 @@ def display_store_calculation_results(store_name: str, products: list, result):
     for i, product in enumerate(selected_products, 1):
         st.write(f"{i}. {product['exact_model'] or product['product_model']} - {product['color']} - {product['size']}")
     
-    st.divider()
+    st.write("")  # 紧凑间距
     
     # 计算人民币价格
     cny_price = convert_krw_to_cny(result['final_payment'])
@@ -340,7 +345,7 @@ def display_store_calculation_results(store_name: str, products: list, result):
             st.metric("最终实付", f"{result['final_payment']:,.0f}韩元/{cny_price:,.0f}人民币")
     
     # 显示国内价格对比和折扣率
-    st.divider()
+    st.write("")
     st.write("**国内价格对比:**")
     if has_all_domestic_prices:
         col1, col2, col3 = st.columns(3)
@@ -355,7 +360,7 @@ def display_store_calculation_results(store_name: str, products: list, result):
         st.warning("⚠️ 部分产品缺少国内价格数据，无法计算折扣率")
     
     # 显示使用的优惠
-    st.divider()
+    st.write("")
     st.write("**使用的优惠:**")
     for discount in result['selected_discounts']:
         st.write(f"✅ {discount}")

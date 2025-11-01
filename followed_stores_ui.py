@@ -36,16 +36,32 @@ def show_followed_stores_tab():
     if "show_store_input" not in st.session_state:
         st.session_state.show_store_input = False
     
+    # 初始化关注店铺管理模式状态
+    if "store_management_mode" not in st.session_state:
+        st.session_state.store_management_mode = False
+    
     # 获取所有可用的店铺列表（缓存）
     all_stores = get_all_stores()
     
     # 加载已关注的店铺（使用缓存）
     followed_stores = get_followed_stores_cached()
     
-    # 标题和刷新按钮
-    col_title, col_refresh = st.columns([0.9, 0.1])
+    # 标题和管理按钮
+    col_title, col_manage = st.columns([0.85, 0.15])
     with col_title:
-        st.subheader(f"已关注店铺 ({len(followed_stores)}家)")
+        st.write(f"**已关注店铺 ({len(followed_stores)}家)**")
+    with col_manage:
+        if st.session_state.store_management_mode:
+            if st.button("✅ 完成管理", use_container_width=True, key="finish_store_manage"):
+                st.session_state.store_management_mode = False
+                st.rerun()
+        else:
+            if st.button("⚙️ 管理", use_container_width=True, key="start_store_manage"):
+                st.session_state.store_management_mode = True
+                st.rerun()
+    
+    # 刷新按钮
+    col_refresh, _ = st.columns([0.1, 0.9])
     with col_refresh:
         if st.button("🔄", key="refresh_followed_btn", help="刷新已关注店铺列表"):
             refresh_followed_stores_cache()
@@ -63,20 +79,21 @@ def show_followed_stores_tab():
                 st.empty()  # 占位符
             
             with col3:
-                # 删除按钮
-                if st.button("🗑️", key=f"delete_store_{store['id']}", help="取消关注"):
-                    if remove_followed_store(store['id']):
-                        refresh_followed_stores_cache()
-                        st.toast("已取消关注", icon="✅")
-                    else:
-                        st.error("删除失败")
+                # 在管理模式下显示删除按钮
+                if st.session_state.store_management_mode:
+                    if st.button("🗑️", key=f"delete_store_{store['id']}", help="取消关注"):
+                        if remove_followed_store(store['id']):
+                            refresh_followed_stores_cache()
+                            st.toast("已取消关注", icon="✅")
+                        else:
+                            st.error("删除失败")
     else:
         st.info("暂无关注的店铺，请添加一些店铺")
     
-    st.divider()
+    st.write("")
     
     # 添加新店铺区域
-    st.subheader("添加关注店铺")
+    st.write("**添加关注店铺**")
     
     # 显示/隐藏输入框的按钮
     if not st.session_state.show_store_input:
@@ -109,10 +126,10 @@ def show_followed_stores_tab():
                 st.session_state.show_store_input = False
                 st.rerun()
     
-    st.divider()
+    st.write("")
     
     # 批量操作
-    st.subheader("批量操作")
+    st.write("**批量操作**")
     
     col1, col2 = st.columns(2)
     

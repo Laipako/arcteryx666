@@ -186,7 +186,7 @@ def query_stock_by_product_id(product_id):
 def get_inventory_matrix_transposed(favorites_list):
     """转置库存矩阵：店铺×产品（并发优化版）"""
     if not favorites_list:
-        return {}
+        return {}, {"success": 0, "failed": 0, "failed_details": []}
 
     # 提取所有SKU ID用于批量查询
     product_ids = [favorite['sku'] for favorite in favorites_list]
@@ -195,14 +195,14 @@ def get_inventory_matrix_transposed(favorites_list):
 
     # 根据产品数量动态调整并发数（优化版：提高并发度）
     if len(product_ids) <= 3:
-        max_workers = 2  # 产品少时使用较低并发
+        max_workers = 3  # 产品少时使用较低并发
     elif len(product_ids) <= 10:
-        max_workers = 4  # 中等数量使用中等并发
+        max_workers = 6  # 中等数量使用中等并发
     else:
-        max_workers = 8  # 产品多时使用更高并发
+        max_workers = 10  # 产品多时使用更高并发
 
     # 使用并发查询
-    batch_results = batch_query_stock_concurrent(
+    batch_results, stats = batch_query_stock_concurrent(
         product_ids,
         max_workers=max_workers,
         timeout_per_request=12  # 稍微延长超时时间
@@ -234,7 +234,7 @@ def get_inventory_matrix_transposed(favorites_list):
             inventory_data[store_name][product_key] = stock_count
 
     print(f"库存矩阵构建完成: 共 {len(inventory_data)} 个店铺")
-    return inventory_data
+    return inventory_data, stats
 def calculate_stock_status_distribution(inventory_matrix):
     """计算库存状态分布"""
     stock_stats = {
@@ -459,17 +459,17 @@ def batch_query_stock_concurrent(product_ids: List[str], max_workers: int = 3, t
         timeout_per_request: 单个请求超时时间（秒）
 
     Returns:
-        查询结果字典 {product_id: stock_data}
+        元组: (查询结果字典 {product_id: stock_data}, 统计字典)
     """
     results = {}
     failed_queries = []
 
     # 参数验证
     if not product_ids:
-        return {}
+        return {}, {"success": 0, "failed": 0, "failed_details": []}
 
-    if max_workers > 5:  # 安全限制，最大并发数不超过5
-        max_workers = 5
+    if max_workers > 10:  # 安全限制，最大并发数不超过10
+        max_workers = 10
 
     print(f"开始并发查询 {len(product_ids)} 个产品，并发数: {max_workers}")
     start_time = time.time()
@@ -505,7 +505,12 @@ def batch_query_stock_concurrent(product_ids: List[str], max_workers: int = 3, t
     except Exception as e:
         print(f"并发查询执行器异常: {e}")
         # 回退到串行查询
-        return fallback_serial_query(product_ids)
+        serial_results = fallback_serial_query(product_ids)
+        return serial_results, {
+            "success": len(serial_results),
+            "failed": len(product_ids) - len(serial_results),
+            "failed_details": []
+        }
 
     # 统计信息
     end_time = time.time()
@@ -518,7 +523,16 @@ def batch_query_stock_concurrent(product_ids: List[str], max_workers: int = 3, t
     if failed_queries:
         print(f"失败查询: {failed_queries}")
 
-    return results
+    stats = {
+        "success": len(results),
+        "failed": len(failed_queries),
+        "total": len(product_ids),
+        "success_rate": round(success_rate, 1),
+        "duration": duration,
+        "failed_details": failed_queries
+    }
+
+    return results, stats
 
 
 def fallback_serial_query(product_ids: List[str]) -> Dict[str, Any]:
@@ -551,11 +565,14 @@ def safe_batch_query(favorites_list, max_workers=None):
     """
     安全的批量查询入口函数
     包含各种边界条件检查和保护措施
+    
+    Returns:
+        元组: (库存矩阵, 查询统计信息)
     """
     # 参数检查
     if not favorites_list:
         print("警告: 传入空收藏列表")
-        return {}
+        return {}, {"success": 0, "failed": 0, "failed_details": []}
 
     # 验证SKU格式
     valid_favorites = []
@@ -568,7 +585,7 @@ def safe_batch_query(favorites_list, max_workers=None):
 
     if not valid_favorites:
         print("错误: 没有有效的SKU可供查询")
-        return {}
+        return {}, {"success": 0, "failed": 0, "failed_details": []}
 
     # 限制最大查询数量（安全限制）
     MAX_QUERY_LIMIT = 50
@@ -579,11 +596,11 @@ def safe_batch_query(favorites_list, max_workers=None):
     # 动态计算并发数（保守策略）
     if max_workers is None:
         if len(valid_favorites) <= 2:
-            max_workers = 1
-        elif len(valid_favorites) <= 8:
             max_workers = 2
+        elif len(valid_favorites) <= 8:
+            max_workers = 5
         else:
-            max_workers = 3
+            max_workers = 8
 
     print("安全查询配置: " + str(len(valid_favorites)) + "个产品, 并发数: " + str(max_workers))
 
